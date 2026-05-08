@@ -1,0 +1,15 @@
+<Mod xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://gitee.com/SC-SPM/SurvivalcraftApi/raw/SCAPI1.9/Survivalcraft/Content/Assets/Database.xsd">
+  <ProjectTemplate Name="Project" Guid="85023bf8-1c90-4dd1-9442-e6c13691d078">
+  </ProjectTemplate>
+
+  <EntityTemplate Name="Player" Guid="4be6c1c5-d65d-4537-8a8b-a391969e6dc2">
+    <MemberComponentTemplate Name="ComponentMusketAutoReload" Guid="c001a001-0002-4000-a000-aaa000000002" InheritanceParent="c001a001-1002-4000-a000-aaa000000002"/>
+  </EntityTemplate>
+
+  <Folder Name="MusketAutoReload" Guid="d001b001-f001-4000-c000-aaa000000000">
+    <ComponentTemplate Name="ComponentMusketAutoReload" Guid="c001a001-1002-4000-a000-aaa000000002" InheritanceParent="b05700ed-7e4e-4679-98f5-b597f421496b">
+      <Parameter Name="Class" Guid="c001a001-1201-4000-a000-aaa000000002" Value="Game.ComponentMusketAutoReload" Type="string"/>
+      <Parameter Name="LoadOrder" Guid="c001a001-1202-4000-a000-aaa000000002" Value="2147483646" Type="int"/>
+    </ComponentTemplate>
+  </Folder>
+</Mod>
