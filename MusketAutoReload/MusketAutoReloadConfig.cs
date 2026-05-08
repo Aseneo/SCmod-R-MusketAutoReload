@@ -12,6 +12,7 @@ namespace Game {
 
         public static string ConfigPath => Storage.CombinePaths(ModsManager.ModsPath, "MusketAutoReloadConfig.json");
 
+        // 加载配置: 文件缺失或解析失败时自动生成默认配置
         public static void Load() {
             MusketAutoReloadConfigData data = new();
             if (Storage.FileExists(ConfigPath)) {
