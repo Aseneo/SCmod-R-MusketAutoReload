@@ -1,0 +1,14 @@
+F:\SurvivalCraft\scapi\1.9.0.2.7\R键装填\MusketAutoReload\bin\Debug\net10.0\Assets\Lang\en-US.json
+F:\SurvivalCraft\scapi\1.9.0.2.7\R键装填\MusketAutoReload\bin\Debug\net10.0\Assets\Lang\zh-CN.json
+F:\SurvivalCraft\scapi\1.9.0.2.7\R键装填\MusketAutoReload\bin\Debug\net10.0\Assets\MusketAutoReloadDatabase.xdb
+F:\SurvivalCraft\scapi\1.9.0.2.7\R键装填\MusketAutoReload\bin\Debug\net10.0\modinfo.json
+F:\SurvivalCraft\scapi\1.9.0.2.7\R键装填\MusketAutoReload\bin\Debug\net10.0\MusketAutoReload.dll
+F:\SurvivalCraft\scapi\1.9.0.2.7\R键装填\MusketAutoReload\bin\Debug\net10.0\MusketAutoReload.pdb
+F:\SurvivalCraft\scapi\1.9.0.2.7\R键装填\MusketAutoReload\obj\Debug\net10.0\MusketAutoReload.csproj.AssemblyReference.cache
+F:\SurvivalCraft\scapi\1.9.0.2.7\R键装填\MusketAutoReload\obj\Debug\net10.0\MusketAutoReload.GeneratedMSBuildEditorConfig.editorconfig
+F:\SurvivalCraft\scapi\1.9.0.2.7\R键装填\MusketAutoReload\obj\Debug\net10.0\MusketAutoReload.csproj.CoreCompileInputs.cache
+F:\SurvivalCraft\scapi\1.9.0.2.7\R键装填\MusketAutoReload\obj\Debug\net10.0\MusketAutoReload.sourcelink.json
+F:\SurvivalCraft\scapi\1.9.0.2.7\R键装填\MusketAutoReload\obj\Debug\net10.0\MusketAutoReload.dll
+F:\SurvivalCraft\scapi\1.9.0.2.7\R键装填\MusketAutoReload\obj\Debug\net10.0\refint\MusketAutoReload.dll
+F:\SurvivalCraft\scapi\1.9.0.2.7\R键装填\MusketAutoReload\obj\Debug\net10.0\MusketAutoReload.pdb
+F:\SurvivalCraft\scapi\1.9.0.2.7\R键装填\MusketAutoReload\obj\Debug\net10.0\ref\MusketAutoReload.dll
