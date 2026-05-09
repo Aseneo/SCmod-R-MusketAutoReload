@@ -35,7 +35,6 @@ namespace Game {
 
         /// <summary>
         /// 主菜单创建时，在右下角底部栏添加 "R" 配置按钮
-        /// 原版按钮尺寸为 60x60，此处 50x50 略小以区分
         /// </summary>
         public override void OnMainMenuScreenCreated(MainMenuScreen mainMenuScreen,
             StackPanelWidget leftBottomBar, StackPanelWidget rightBottomBar) {
