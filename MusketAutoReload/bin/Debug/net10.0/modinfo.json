@@ -8,7 +8,7 @@
   "LoadOrder": 10000,
   "NonPersistentMod": false,
   "GameplayImpactLevel": "Turbo",
-  "Link": "https://github.com/Aseneo/SCmod-R-MusketAutoReload",
+  "Link": "https://gitee.com/Aseneo/SCmod-R-MusketAutoReload",
   "Author": "Aseneo",
   "PackageName": "com.musketaoreload.test",
   "Dependencies": {}
