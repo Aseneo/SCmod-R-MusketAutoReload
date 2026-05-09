@@ -1,5 +1,29 @@
 # 更新日志
 
+## v1.2.0 — 2026-05-09
+
+### 修复
+- **弹药消耗**: 修复使用R键装填后弹药不消耗的Bug。`ProcessInventoryItem`只更新武器槽状态不消耗弹药，需根据`pc==0`手动移除源槽位物品。
+- **火枪已装填误判**: 发射后`BulletType`残留导致空枪被误判为已装填，改为`LoadState==Loaded`判断。
+- **信息显示逻辑重构**: 移除不可靠的记忆(s_loadedOnce)机制，改为`m_foundAmmo`(behavior实时确认) + `s_compatibleAmmo`(弹药类型记录)双重检测。
+- **长按满弹后误报**: 修复长按装满后只显示一次"已装填"之后显示"没有可用弹药"的问题。满弹后`m_reloadTimer=-FirstDelay`延迟重试，`m_foundAmmo`跨步保留。
+- **单按满弹不显示已装填**: 修复单按R时不经过长按路径导致`m_didProcessThisHold`永远为false的问题。新增`HasCompatibleAmmo`扫描背包。
+- **弩拉弦误报**: 修复弩拉弦成功但返回false导致误显示"没有可用的弩箭"。`TryCrankCrossbow`改为返回bool并检查是否已拉满。
+- **弩拉满后无提示**: 修复弩已拉满时`TryCrankCrossbow`不检查`curDraw`直接覆盖导致的行为异常。
+
+### 新增
+- **弹药类型记录系统** (`s_compatibleAmmo`): behavior确认兼容的弹药值记录到`Dictionary<武器类型, HashSet<弹药值>>`，用于跨次按键判断背包中是否有弹药。
+- **HasCompatibleAmmo**: 遍历背包检查是否含有曾记录过的兼容弹药。支持多弹药类型武器(类型1耗尽而类型2存在也能正确识别)。
+- **m_foundAmmo持久化**: 从每次`TryProcessAmmo`重置改为每次新按键开始重置，使本按键期间找到过弹药的信息得以保留。
+- **m_reloadTimer节流优化**: 装填中断后延迟0.5s而非直接跳-10f，避免刷屏。
+- **XML文档注释**: 所有源码文件添加完整的XML文档注释。
+
+### 修改
+- **TryProcessAmmo**: 比较`ProcessInventoryItem`前后slotValue变化来判断是否真正装填成功，避免behavior返回pc=0但未消费时的误判。
+- **ShowFinalStatus**: loaded判断改为四条件：`m_didProcessThisHold || IsAlreadyLoaded || m_foundAmmo || HasCompatibleAmmo`。
+
+---
+
 ## v1.1.0 — 2026-05-09
 
 ### 新增
@@ -28,8 +52,6 @@
 - 装填冷却系统（火枪 2.5s / 弩 1.5s / 弓 0.8s，等级缩放 -20%/级）。
 - 冷却覆盖层：物品栏槽位上显示剩余冷却倒计时数字。
 - 模组武器检测到后自动禁用装填冷却。
-- 跨次按键装填状态记忆（`s_loadedOnce`）。
-- 装填状态兜底扫描（反射遍历 `*Type` 方法）。
 - 配置文件 `EnableReloadCooldown` 手动控制开关。
 
 ### 文件

@@ -4,7 +4,14 @@ using Engine.Graphics;
 using HarmonyLib;
 
 namespace Game {
+    /// <summary>
+    /// 武器装填冷却追踪器
+    /// 以(IInventory + SlotIndex)为键，每个物品栏槽位独立计冷却
+    /// </summary>
     public static class MusketCooldownTracker {
+        /// <summary>
+        /// 槽位键：组合物品栏引用和槽位索引，支持Dictionary去重
+        /// </summary>
         public struct SlotKey {
             public IInventory Inventory;
             public int SlotIndex;
@@ -29,7 +36,9 @@ namespace Game {
         // 全局冷却开关: 配置文件可手动关闭, 检测到模组武器时自动关闭
         public static bool CooldownEnabled = true;
 
-        // 记录武器发射时间 (Harmony发射检测补丁调用)
+        /// <summary>
+        /// 记录武器发射时间 (Harmony发射检测补丁调用)
+        /// </summary>
         public static void RecordFire(IInventory inventory, int slotIndex, float cooldown) {
             if (!CooldownEnabled) return;
             SlotKey key = new SlotKey(inventory, slotIndex);
@@ -37,7 +46,9 @@ namespace Game {
             FullCooldowns[key] = cooldown;
         }
 
-        // 查询剩余冷却秒数, 已结束返回0
+        /// <summary>
+        /// 查询剩余冷却秒数, 已结束返回0
+        /// </summary>
         public static float GetCooldownRemaining(IInventory inventory, int slotIndex) {
             if (!CooldownEnabled) return 0f;
             SlotKey key = new SlotKey(inventory, slotIndex);
@@ -56,7 +67,9 @@ namespace Game {
             return 2.5f;
         }
 
-        // 判断方块是否为可装填武器 (原版或模组武器)
+        /// <summary>
+        /// 判断方块是否为可装填武器 (原版或已被s_patternCache记录的模组武器)
+        /// </summary>
         public static bool IsReloadableWeapon(int contents) {
             if (contents == 0 || contents >= BlocksManager.Blocks.Length) { return false; }
             if (ComponentMusketAutoReload.s_patternCache.TryGetValue(contents, out ComponentMusketAutoReload.ReloadPattern pattern)) {
@@ -67,7 +80,9 @@ namespace Game {
         }
     }
 
-    // 冷却覆盖层: 在每个 InventorySlotWidget 构造时叠加一个 LabelWidget 用于显示冷却数字
+    /// <summary>
+    /// 冷却覆盖层: 在每个InventorySlotWidget构造时叠加LabelWidget显示冷却倒计时数字
+    /// </summary>
     [HarmonyPatch(typeof(InventorySlotWidget), MethodType.Constructor)]
     static class InventorySlotCooldownOverlayPatch {
         public static Dictionary<InventorySlotWidget, LabelWidget> Labels = new();
@@ -86,7 +101,9 @@ namespace Game {
         }
     }
 
-    // 冷却覆盖层更新: 每帧检查槽位是否需要装填, 显示 X.X 秒冷却倒计时
+    /// <summary>
+    /// 冷却覆盖层更新: 每帧检查槽位是否需要装填, 显示X.X秒冷却倒计时
+    /// </summary>
     [HarmonyPatch(typeof(InventorySlotWidget), nameof(InventorySlotWidget.Update))]
     static class InventorySlotCooldownUpdatePatch {
         static void Postfix(InventorySlotWidget __instance) {
@@ -130,8 +147,11 @@ namespace Game {
         }
     }
 
-    // 火枪发射检测: 拦截 SubsystemMusketBlockBehavior.OnAim(AimState.Completed)
-    // Prefix 计算发射前冷却, Postfix 在发射成功(LoadState变为Empty)后记录冷却
+    /// <summary>
+    /// 火枪发射检测: 拦截SubsystemMusketBlockBehavior.OnAim(AimState.Completed)
+    /// Prefix计算发射前冷却, Postfix在发射成功(LoadState变为Empty)后记录冷却
+    /// 冷却公式: 2.5s起, 每级-20%, 最低1.0s
+    /// </summary>
     [HarmonyPatch(typeof(SubsystemMusketBlockBehavior), nameof(SubsystemMusketBlockBehavior.OnAim))]
     static class MusketFireDetectionPatch {
         static float s_cooldown;
@@ -150,7 +170,7 @@ namespace Game {
             // 已空或未锤击 → 不计算冷却
             if (loadState == MusketBlock.LoadState.Empty) { return true; }
             if (!MusketBlock.GetHammerState(data)) { return true; }
-            // 火枪冷却: 2.5s 起, 每级 -20%, 最低 1.0s
+            // 火枪冷却: 2.5s起, 每级-20%, 最低1.0s
             ComponentPlayer player = componentMiner.Entity.FindComponent<ComponentPlayer>();
             if (player != null) {
                 float level = player.PlayerData.Level;
@@ -178,7 +198,10 @@ namespace Game {
         }
     }
 
-    // 弩发射检测: 弩冷却 1.5s 起, 每级 -20%, 最低 0.5s
+    /// <summary>
+    /// 弩发射检测: 弩冷却1.5s起, 每级-20%, 最低0.5s
+    /// 弦满+装箭状态下发射才记录冷却
+    /// </summary>
     [HarmonyPatch(typeof(SubsystemCrossbowBlockBehavior), nameof(SubsystemCrossbowBlockBehavior.OnAim))]
     static class CrossbowFireDetectionPatch {
         static float s_cooldown;
@@ -195,7 +218,7 @@ namespace Game {
             int data = Terrain.ExtractData(slotValue);
             // 弩弦未满或未装箭 → 不计算冷却
             if (CrossbowBlock.GetDraw(data) != 15 || !CrossbowBlock.GetArrowType(data).HasValue) { return true; }
-            // 弩冷却: 1.5s 起, 每级 -20%, 最低 0.5s
+            // 弩冷却: 1.5s起, 每级-20%, 最低0.5s
             ComponentPlayer player = componentMiner.Entity.FindComponent<ComponentPlayer>();
             if (player != null) {
                 float level = player.PlayerData.Level;
@@ -217,7 +240,10 @@ namespace Game {
         }
     }
 
-    // 弓发射检测: 弓冷却 0.8s 起, 每级 -20%, 最低 0.3s
+    /// <summary>
+    /// 弓发射检测: 弓冷却0.8s起, 每级-20%, 最低0.3s
+    /// 装箭状态下发射才记录冷却
+    /// </summary>
     [HarmonyPatch(typeof(SubsystemBowBlockBehavior), nameof(SubsystemBowBlockBehavior.OnAim))]
     static class BowFireDetectionPatch {
         static float s_cooldown;
@@ -236,7 +262,7 @@ namespace Game {
             int data = Terrain.ExtractData(slotValue);
             // 未装箭 → 不计算冷却
             if (!BowBlock.GetArrowType(data).HasValue) { return true; }
-            // 弓冷却: 0.8s 起, 每级 -20%, 最低 0.3s
+            // 弓冷却: 0.8s起, 每级-20%, 最低0.3s
             ComponentPlayer player = componentMiner.Entity.FindComponent<ComponentPlayer>();
             if (player != null) {
                 float level = player.PlayerData.Level;
@@ -258,6 +284,9 @@ namespace Game {
         }
     }
 
+    /// <summary>
+    /// 主菜单右下角 "R" 按钮点击 → 打开配置界面
+    /// </summary>
     [HarmonyPatch(typeof(MainMenuScreen), nameof(MainMenuScreen.Update))]
     static class MainMenuConfigButtonPatch {
         static void Postfix(MainMenuScreen __instance) {

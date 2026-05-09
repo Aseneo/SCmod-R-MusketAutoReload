@@ -3,6 +3,7 @@
 ## 项目介绍
 
 ## AI创作警告
+
 - 本项目为 AI 创作，包含人工审查及部分修改，介意者勿用。
 - 本项目仅用于学习和研究，不包含任何商业用途。
 - 使用agent工具：Trae CN
@@ -25,7 +26,7 @@ R键装填/
     ├── MusketAutoReloadModPatches.cs        # 全部 Harmony 补丁 (冷却追踪 + 冷却覆盖层 + 三种武器发射检测 + 配置按钮)
     ├── MusketAutoReloadConfig.cs            # 静态配置类
     ├── MusketAutoReloadConfigScreen.cs      # 游戏内配置界面 Screen
-    ├── ComponentMusketAutoReload.cs         # 武器 R 键快速装填组件 (含模组武器兼容)
+    ├── ComponentMusketAutoReload.cs         # 武器 R 键快速装填组件 (含模组武器兼容 + 弹药类型记录)
     └── Assets/
         ├── MusketAutoReloadDatabase.xdb     # 数据库: 组件注册
         ├── Screens/
@@ -42,35 +43,52 @@ R键装填/
 - **文件**: [ComponentMusketAutoReload.cs](MusketAutoReload/ComponentMusketAutoReload.cs) + [MusketAutoReloadModPatches.cs](MusketAutoReload/MusketAutoReloadModPatches.cs)
 - **支持武器**: 火枪、弩、弓（含原版子类 + 模组武器，通过三级检测自动适配）
 - **优先使用官方 Behavior API**: 装填逻辑委托给武器的 `SubsystemBlockBehavior`，通过 `GetProcessInventoryItemCapacity` + `ProcessInventoryItem` 保证与游戏原版行为一致，并自动兼容有自定义 behavior 的模组武器
+- **装填成功判定**: 比较 `ProcessInventoryItem` 前后武器槽 value 是否变化，确保真实装填成功。弹药消耗通过 `pc==0` 标记手动移除
 - **长按 R 键持续装填**: 单按 R 始终执行一次装填步骤；长按 0.5s 后启动连续装填（受 `EnableLongPressReload` 控制），每 0.04s 递进一步
 - **弹药搜索顺序**: 从武器槽位右侧开始环绕搜索，同行靠右、同列靠上的弹药优先
 - **创造模式优化**: 只搜索快捷栏（VisibleSlotsCount ≤ 10），避免扫描全物品目录
 - **状态提示**: 缺失材料 `没有可用的 XX` / 已装填 `XX 已装填` / 冷却中 `装填冷却中！`
-- **跨次按键状态记忆**: 满弹后反复按 R 始终正确提示"已装填"
 
 ### 2. 武器兼容性系统
 
 #### 武器模式检测（三级，结果缓存）
 
-| 级别 | 检测方式 | 覆盖 |
-|------|---------|------|
-| 1 | `block is MusketBlock/CrossbowBlock/BowBlock` | 原版 + 所有继承子类 |
-| 2 | `behavior is SubsystemMusketBlockBehavior/...` | 任何注册了官方 behavior 的模组武器 |
-| 3 | 反射：`GetLoadState+SetLoadState` / `GetDraw+SetDraw+GetArrowType+SetArrowType` | 沿袭原版方法签名的自定义武器 |
+| 级别 | 检测方式                                                                         | 覆盖                     |
+| -- | ---------------------------------------------------------------------------- | ---------------------- |
+| 1  | `block is MusketBlock/CrossbowBlock/BowBlock`                                | 原版 + 所有继承子类            |
+| 2  | `behavior is SubsystemMusketBlockBehavior/...`                               | 任何注册了官方 behavior 的模组武器 |
+| 3  | 反射：`GetLoadState+SetLoadState` / `GetDraw+SetDraw+GetArrowType+SetArrowType` | 沿袭原版方法签名的自定义武器         |
 
-#### 弹药兼容（三级）
+#### 弹药兼容与类型记录系统
 
-| 级别 | 检测方式 | 覆盖 |
-|------|---------|------|
-| 1 | `behavior.GetProcessInventoryItemCapacity(inv, weaponSlot, ammo)` — 官方 API | 标准 behavior 实现 |
-| 2 | `ammoBlock is BulletBlock` / `ammoBlock is ArrowBlock` + `IsBoltType` | 原版继承链 |
-| 3 | 遍历弹药块所有 `Get*Type(int)` 静态方法 | 完全自定义的模组弹药 |
+| 机制                  | 说明                                         |
+| ------------------- | ------------------------------------------ |
+| `m_foundAmmo`       | 本次按键期间 behavior 确认过有兼容弹药，跨步保留              |
+| `s_compatibleAmmo`  | 记录 behavior 曾确认兼容的弹药值(武器类型→弹药值集合)，用于跨次按键判定 |
+| `HasCompatibleAmmo` | 遍历背包检查是否有记录过的兼容弹药，支持多弹药类型武器                |
+
+**弹药检测流程**：
+
+1. behavior `GetProcessInventoryItemCapacity > 0` → 弹药匹配
+2. 记录弹药值到 `s_compatibleAmmo`，设 `m_foundAmmo = true`
+3. 调用 `ProcessInventoryItem`，比较前后 slot value 判定是否真实装填
+4. 后续按键通过 `HasCompatibleAmmo` 扫描背包确认有无弹药
 
 #### 装填状态检测
 
-- 优先：`GetBulletType(data) != null` / `GetArrowType(data) != null`
-- 兜底：遍历武器类所有 `public static *Type(int)` 方法
-- 持久记录：首次确认装填状态后跨按键保持
+- 原版火枪: `LoadState == Loaded`（不用BulletType，因发射后BulletType残留）
+- 原版弩: `ArrowType != null && Draw >= 15`
+- 原版弓: `ArrowType != null`
+- 模组武器: 反射缓存的 `GetBulletType`/`GetArrowType`/`anyTypeGetter`
+
+#### 状态提示逻辑
+
+```
+loaded = m_didProcessThisHold       // 本次按键已成功装填过
+      || IsAlreadyLoaded(data)      // 武器状态判定(原版严格/模组反射)
+      || m_foundAmmo                // behavior确认有匹配弹药
+      || HasCompatibleAmmo(inv)     // 背包里有曾记录过的兼容弹药
+```
 
 #### 模组武器自动禁用冷却
 
@@ -83,11 +101,11 @@ R键装填/
 
 ### 3. 装填冷却系统
 
-| 武器 | 基础冷却 | 等级缩放 | 最低冷却 |
-|------|---------|---------|---------|
+| 武器 | 基础冷却 | 等级缩放    | 最低冷却 |
+| -- | ---- | ------- | ---- |
 | 火枪 | 2.5s | 每级 -20% | 1.0s |
-| 弩 | 1.5s | 每级 -20% | 0.5s |
-| 弓 | 0.8s | 每级 -20% | 0.3s |
+| 弩  | 1.5s | 每级 -20% | 0.5s |
+| 弓  | 0.8s | 每级 -20% | 0.3s |
 
 - 通过 `MusketCooldownTracker.CooldownEnabled` 全局开关控制
 - 配置项 `EnableReloadCooldown` 可手动关闭
@@ -109,10 +127,10 @@ R键装填/
 
 #### 配置项
 
-| 配置项 | 默认值 | 说明 |
-|--------|--------|------|
-| `EnableLongPressReload` | `true` | R键长按连续装填（单按不受此开关影响） |
-| `EnableReloadCooldown` | `true` | 装填冷却（检测到模组武器时自动禁用并锁定） |
+| 配置项                     | 默认值    | 说明                                 |
+| ----------------------- | ------ | ---------------------------------- |
+| `EnableLongPressReload` | `true` | R键长按连续装填（单按不受此开关影响）                |
+| `EnableReloadCooldown`  | `true` | 装填冷却（检测到模组武器时自动禁用并锁定）              |
 | `EnableModWeaponCompat` | `true` | 启用模组武器兼容（三级检测、冷却自动禁用等）；关闭后仅对原版武器有效 |
 
 ## 架构设计
@@ -121,22 +139,22 @@ R键装填/
 
 1 个自定义 Component 通过 `MusketAutoReloadDatabase.xdb` 注册到 Player 实体：
 
-| 组件 | LoadOrder | 功能 |
-|------|-----------|------|
-| ComponentMusketAutoReload | 2147483646 | 武器 R 键装填 + 长按持续装填 + 冷却检测 |
+| 组件                        | LoadOrder  | 功能                                |
+| ------------------------- | ---------- | --------------------------------- |
+| ComponentMusketAutoReload | 2147483646 | 武器 R 键装填 + 长按持续装填 + 冷却检测 + 弹药类型记录 |
 
 ### Harmony 补丁注入
 
 全部补丁定义在 `MusketAutoReloadModPatches.cs`，由 `MusketAutoReloadModLoader.__ModInitialize()` 中的 `harmony.PatchAll()` 一次性注入：
 
-| 补丁 | 目标方法 | 功能 |
-|------|---------|------|
-| InventorySlotCooldownOverlayPatch | InventorySlotWidget.ctor | 添加冷却数字 Label |
-| InventorySlotCooldownUpdatePatch | InventorySlotWidget.Update | 更新冷却数字显示（含模组武器） |
-| MusketFireDetectionPatch | SubsystemMusketBlockBehavior.OnAim | 火枪发射→记录冷却 |
-| CrossbowFireDetectionPatch | SubsystemCrossbowBlockBehavior.OnAim | 弩发射→记录冷却 |
-| BowFireDetectionPatch | SubsystemBowBlockBehavior.OnAim | 弓发射→记录冷却 |
-| MainMenuConfigButtonPatch | MainMenuScreen.Update | 主菜单右下角按钮点击→打开配置界面 |
+| 补丁                                | 目标方法                                 | 功能                |
+| --------------------------------- | ------------------------------------ | ----------------- |
+| InventorySlotCooldownOverlayPatch | InventorySlotWidget.ctor             | 添加冷却数字 Label      |
+| InventorySlotCooldownUpdatePatch  | InventorySlotWidget.Update           | 更新冷却数字显示（含模组武器）   |
+| MusketFireDetectionPatch          | SubsystemMusketBlockBehavior.OnAim   | 火枪发射→记录冷却         |
+| CrossbowFireDetectionPatch        | SubsystemCrossbowBlockBehavior.OnAim | 弩发射→记录冷却          |
+| BowFireDetectionPatch             | SubsystemBowBlockBehavior.OnAim      | 弓发射→记录冷却          |
+| MainMenuConfigButtonPatch         | MainMenuScreen.Update                | 主菜单右下角按钮点击→打开配置界面 |
 
 ### 配置系统
 
