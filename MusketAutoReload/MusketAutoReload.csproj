@@ -37,6 +37,7 @@
         <Compile Include="MusketAutoReloadModLoader.cs"/>
         <Compile Include="MusketAutoReloadModPatches.cs"/>
         <Compile Include="MusketAutoReloadConfig.cs"/>
+        <Compile Include="MusketAutoReloadConfigScreen.cs"/>
         <Compile Include="ComponentMusketAutoReload.cs"/>
     </ItemGroup>
     <Target Name="PostBuild" AfterTargets="PostBuildEvent">

@@ -1,9 +1,9 @@
 {
   "$schema": "https://gitee.com/SC-SPM/SurvivalcraftApi/raw/SCAPI1.9/Survivalcraft/Content/modinfo-scheme.json",
   "Name": "R键装填",
-  "Version": "1.0",
+  "Version": "1.1",
   "ApiVersion": "1.9.0.2",
-  "Description": "按R键快速装填火枪/弩/弓，支持原版及部分模组武器。",
+  "Description": "按R键快速装填火枪/弩/弓，支持原版及部分模组武器。含游戏内配置界面。",
   "ScVersion": "2.4.0.0",
   "LoadOrder": 10000,
   "NonPersistentMod": false,

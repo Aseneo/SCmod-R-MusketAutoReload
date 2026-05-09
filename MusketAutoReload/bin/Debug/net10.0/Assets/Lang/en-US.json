@@ -1,2 +1,19 @@
 {
+  "MusketAutoReloadConfig": {
+    "0": "R-Reload Config",
+    "1": "Weapon Reload",
+    "2": "Mod Compatibility",
+    "3": "Changes take effect immediately upon closing this page",
+    "4": "Hold R to Reload",
+    "5": "Reload Cooldown",
+    "6": "Enable Mod Weapon Compat",
+    "7": "Note",
+    "8": "Single R press always performs reload regardless of this setting",
+    "9": "Cooldown auto-disabled when mod weapons are detected",
+    "10": "On",
+    "11": "Off",
+    "12": "Auto-disabled after detecting mod weapons",
+    "13": "Only vanilla weapons work when disabled",
+    "14": "R"
+  }
 }

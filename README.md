@@ -10,7 +10,7 @@
 
 ## 模组功能
 
-本模组MusketAutoReload为基于Survivalcraft API 1.9.0.2 创作的独立武器装填模组，从作者自己的另一个辅助向模组 VanillaEnhancement（原版辅助增强） 模组中独立而来，提供按R键快速装填火枪/弩/弓的功能，含冷却覆盖层显示，支持原版及部分模组武器。
+本模组MusketAutoReload为基于Survivalcraft API 1.9.0.2 创作的独立武器装填模组，从作者自己的另一个辅助向模组 VanillaEnhancement（原版辅助增强） 模组中独立而来，提供按R键快速装填火枪/弩/弓的功能，含冷却覆盖层显示、游戏内配置界面，支持原版及部分模组武器。
 
 ## 目录结构
 
@@ -21,15 +21,18 @@ R键装填/
 └── MusketAutoReload/
     ├── modinfo.json                         # 模组元数据
     ├── MusketAutoReload.csproj              # .NET 10 项目文件
-    ├── MusketAutoReloadModLoader.cs         # 模组入口: 注册钩子 + Harmony 激活 + 加载配置
-    ├── MusketAutoReloadModPatches.cs        # 全部 Harmony 补丁 (冷却追踪 + 冷却覆盖层 + 三种武器发射检测)
-    ├── MusketAutoReloadConfig.cs            # 配置文件系统
+    ├── MusketAutoReloadModLoader.cs         # 模组入口: 注册钩子 + Harmony 激活 + 加载/保存配置
+    ├── MusketAutoReloadModPatches.cs        # 全部 Harmony 补丁 (冷却追踪 + 冷却覆盖层 + 三种武器发射检测 + 配置按钮)
+    ├── MusketAutoReloadConfig.cs            # 静态配置类
+    ├── MusketAutoReloadConfigScreen.cs      # 游戏内配置界面 Screen
     ├── ComponentMusketAutoReload.cs         # 武器 R 键快速装填组件 (含模组武器兼容)
     └── Assets/
         ├── MusketAutoReloadDatabase.xdb     # 数据库: 组件注册
+        ├── Screens/
+        │   └── MusketAutoReloadConfigScreen.xml  # 配置界面布局
         └── Lang/
-            ├── zh-CN.json
-            └── en-US.json
+            ├── zh-CN.json                   # 中文本地化
+            └── en-US.json                   # 英文本地化
 ```
 
 ## 功能详解
@@ -39,7 +42,7 @@ R键装填/
 - **文件**: [ComponentMusketAutoReload.cs](MusketAutoReload/ComponentMusketAutoReload.cs) + [MusketAutoReloadModPatches.cs](MusketAutoReload/MusketAutoReloadModPatches.cs)
 - **支持武器**: 火枪、弩、弓（含原版子类 + 模组武器，通过三级检测自动适配）
 - **优先使用官方 Behavior API**: 装填逻辑委托给武器的 `SubsystemBlockBehavior`，通过 `GetProcessInventoryItemCapacity` + `ProcessInventoryItem` 保证与游戏原版行为一致，并自动兼容有自定义 behavior 的模组武器
-- **长按 R 键持续装填**: 长按 0.5s 后启动自动装填，之后每 0.04s 递进一步，60 发步枪约 2.9s 装满
+- **长按 R 键持续装填**: 单按 R 始终执行一次装填步骤；长按 0.5s 后启动连续装填（受 `EnableLongPressReload` 控制），每 0.04s 递进一步
 - **弹药搜索顺序**: 从武器槽位右侧开始环绕搜索，同行靠右、同列靠上的弹药优先
 - **创造模式优化**: 只搜索快捷栏（VisibleSlotsCount ≤ 10），避免扫描全物品目录
 - **状态提示**: 缺失材料 `没有可用的 XX` / 已装填 `XX 已装填` / 冷却中 `装填冷却中！`
@@ -71,7 +74,12 @@ R键装填/
 
 #### 模组武器自动禁用冷却
 
-检测到非原版武器（通过 behavior 或反射路径匹配）时，自动禁用装填冷却以保持公平。
+受 `EnableModWeaponCompat` 开关控制:
+
+- **开启**（默认）: 启动时扫描 + 运行时三级检测(继承/behavior/反射), 检测到模组武器时自动禁用冷却并锁定配置按钮
+- **关闭**: R 键仅对精确类型匹配的原版武器(`MusketBlock`/`CrossbowBlock`/`BowBlock`)有效, 不触发冷却禁用
+
+检测到时同步设置 `ModWeaponsDetected` 标记, 配置界面冷却按钮变灰显示"检测到模组武器后已自动禁用"。
 
 ### 3. 装填冷却系统
 
@@ -85,20 +93,27 @@ R键装填/
 - 配置项 `EnableReloadCooldown` 可手动关闭
 - 检测到模组武器时自动禁用，确保公平
 
-#### 配置文件
-
-首次运行后自动在游戏 `Mods/` 文件夹生成 `MusketAutoReloadConfig.json`，升级时自动补齐新增字段：
-
-| 配置项 | 默认值 | 说明 |
-|--------|--------|------|
-| `EnableReloadCooldown` | `true` | 启用装填冷却（检测到模组武器时自动禁用） |
-
 ### 4. 冷却覆盖层
 
 - **文件**: [MusketAutoReloadModPatches.cs](MusketAutoReload/MusketAutoReloadModPatches.cs) `InventorySlotCooldownOverlayPatch` + `InventorySlotCooldownUpdatePatch`
 - **效果**: 在物品栏每个槽位上叠加 LabelWidget，对需要装填的武器显示剩余冷却倒计时（格式：`X.X`）
 - **自动隐藏**: 武器已装填或冷却结束 → 自动隐藏数字；非武器槽位 → 不显示
 - **模组武器兼容**: 使用 `MusketCooldownTracker.IsReloadableWeapon()` 判断是否可装填武器，支持模组武器检测
+
+### 5. 游戏内配置界面
+
+- **文件**: [MusketAutoReloadConfigScreen.cs](MusketAutoReload/MusketAutoReloadConfigScreen.cs) + [MusketAutoReloadConfigScreen.xml](MusketAutoReload/Assets/Screens/MusketAutoReloadConfigScreen.xml)
+- **入口**: 主菜单右下角 "R" 按钮 → `ScreensManager.SwitchScreen("MusketAutoReloadConfig")` → 原版风格的 Screen 配置页面
+- **即时生效**: 调整后关闭页面即可生效，无需重启
+- **多语种支持**: 中文环境显示中文，其他语言显示英文
+
+#### 配置项
+
+| 配置项 | 默认值 | 说明 |
+|--------|--------|------|
+| `EnableLongPressReload` | `true` | R键长按连续装填（单按不受此开关影响） |
+| `EnableReloadCooldown` | `true` | 装填冷却（检测到模组武器时自动禁用并锁定） |
+| `EnableModWeaponCompat` | `true` | 启用模组武器兼容（三级检测、冷却自动禁用等）；关闭后仅对原版武器有效 |
 
 ## 架构设计
 
@@ -121,16 +136,14 @@ R键装填/
 | MusketFireDetectionPatch | SubsystemMusketBlockBehavior.OnAim | 火枪发射→记录冷却 |
 | CrossbowFireDetectionPatch | SubsystemCrossbowBlockBehavior.OnAim | 弩发射→记录冷却 |
 | BowFireDetectionPatch | SubsystemBowBlockBehavior.OnAim | 弓发射→记录冷却 |
+| MainMenuConfigButtonPatch | MainMenuScreen.Update | 主菜单右下角按钮点击→打开配置界面 |
 
-### 配置文件系统
+### 配置系统
 
-首次运行后自动在游戏 `Mods/` 文件夹生成 `MusketAutoReloadConfig.json`，每次启动自动适配新版字段。
-
-- **文件**: [MusketAutoReloadConfig.cs](MusketAutoReload/MusketAutoReloadConfig.cs)
-- **加载时机**: `OnLoadingFinished` 钩子中调用 `MusketAutoReloadConfig.Load()`
-- **容错**: 配置文件缺失或解析失败时自动生成默认配置，不影响游戏运行
-- **升级兼容**: 旧版配置文件加载后自动补齐新字段并写回
-- **格式**: JSON
+- **文件**: [MusketAutoReloadConfig.cs](MusketAutoReload/MusketAutoReloadConfig.cs) + [MusketAutoReloadConfigScreen.cs](MusketAutoReload/MusketAutoReloadConfigScreen.cs) + [MusketAutoReloadModLoader.cs](MusketAutoReload/MusketAutoReloadModLoader.cs)
+- **存储**: 通过 `LoadSettings`/`SaveSettings` 持久化到 `ModsSettings.xml`，API 自动调用
+- **界面**: 主菜单右下角 "R" 按钮 → `ScreensManager.SwitchScreen("MusketAutoReloadConfig")` → Screen 页面即时调整即时生效
+- **多语种**: 中文环境显示中文，其他语言显示英文（`Assets/Lang/zh-CN.json` + `en-US.json`）
 
 ## 构建与安装
 

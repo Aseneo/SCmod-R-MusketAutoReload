@@ -257,4 +257,16 @@ namespace Game {
             s_cooldown = 0f;
         }
     }
+
+    [HarmonyPatch(typeof(MainMenuScreen), nameof(MainMenuScreen.Update))]
+    static class MainMenuConfigButtonPatch {
+        static void Postfix(MainMenuScreen __instance) {
+            var rightBar = __instance.Children.Find<StackPanelWidget>("RightBottomBar", false);
+            if (rightBar == null) return;
+            var btn = rightBar.Children.Find<BevelledButtonWidget>("MusketAutoReloadConfigButton", false);
+            if (btn != null && btn.IsClicked) {
+                ScreensManager.SwitchScreen("MusketAutoReloadConfig");
+            }
+        }
+    }
 }

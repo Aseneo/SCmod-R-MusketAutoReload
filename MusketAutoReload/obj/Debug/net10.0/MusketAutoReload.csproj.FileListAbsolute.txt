@@ -12,3 +12,4 @@ F:\SurvivalCraft\scapi\1.9.0.2.7\R键装填\MusketAutoReload\obj\Debug\net10.0\M
 F:\SurvivalCraft\scapi\1.9.0.2.7\R键装填\MusketAutoReload\obj\Debug\net10.0\refint\MusketAutoReload.dll
 F:\SurvivalCraft\scapi\1.9.0.2.7\R键装填\MusketAutoReload\obj\Debug\net10.0\MusketAutoReload.pdb
 F:\SurvivalCraft\scapi\1.9.0.2.7\R键装填\MusketAutoReload\obj\Debug\net10.0\ref\MusketAutoReload.dll
+F:\SurvivalCraft\scapi\1.9.0.2.7\R键装填\MusketAutoReload\bin\Debug\net10.0\Assets\Screens\MusketAutoReloadConfigScreen.xml

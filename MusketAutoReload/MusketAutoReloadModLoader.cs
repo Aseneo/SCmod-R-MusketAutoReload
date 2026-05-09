@@ -1,23 +1,56 @@
 using System;
 using System.Collections.Generic;
+using System.Xml.Linq;
 using Engine;
 using HarmonyLib;
 
 namespace Game {
-    // 模组主加载器，负责初始化和配置加载
     public class MusketAutoReloadModLoader : ModLoader {
-        // 注册事件与Harmony补丁
         public override void __ModInitialize() {
             ModsManager.RegisterHook("OnLoadingFinished", this);
+            ModsManager.RegisterHook("OnMainMenuScreenCreated", this);
             Harmony harmony = new Harmony("com.musketaoreload.test");
             harmony.PatchAll();
         }
 
-        // 游戏加载完成回调，加载配置并应用冷却设置
         public override void OnLoadingFinished(List<Action> actions) {
-            MusketAutoReloadConfig.Load();
-            MusketCooldownTracker.CooldownEnabled = MusketAutoReloadConfig.EnableReloadCooldown;
+            if (MusketAutoReloadConfig.EnableModWeaponCompat && MusketCooldownTracker.CooldownEnabled)
+                ComponentMusketAutoReload.ScanForModWeapons();
+            ScreensManager.AddScreen("MusketAutoReloadConfig", new MusketAutoReloadConfigScreen());
             Log.Information("MusketAutoReload Mod: Game Loaded.");
+        }
+
+        public override void OnMainMenuScreenCreated(MainMenuScreen mainMenuScreen,
+            StackPanelWidget leftBottomBar, StackPanelWidget rightBottomBar) {
+            rightBottomBar.Children.Add(new BevelledButtonWidget {
+                Name = "MusketAutoReloadConfigButton",
+                Text = LanguageControl.Get("MusketAutoReloadConfig", 14),
+                Size = new Vector2(48, 48),
+                FontScale = 1.2f
+            });
+        }
+
+        public override void SaveSettings(XElement xElement) {
+            xElement.SetAttributeValue("EnableReloadCooldown", MusketAutoReloadConfig.EnableReloadCooldown.ToString());
+            xElement.SetAttributeValue("EnableLongPressReload", MusketAutoReloadConfig.EnableLongPressReload.ToString());
+            xElement.SetAttributeValue("EnableModWeaponCompat", MusketAutoReloadConfig.EnableModWeaponCompat.ToString());
+        }
+
+        public override void LoadSettings(XElement xElement) {
+            var ec = xElement.Attribute("EnableReloadCooldown")?.Value;
+            if (ec != null) MusketAutoReloadConfig.EnableReloadCooldown = bool.TryParse(ec, out bool bc) ? bc : true;
+            MusketCooldownTracker.CooldownEnabled = MusketAutoReloadConfig.EnableReloadCooldown;
+            var el = xElement.Attribute("EnableLongPressReload")?.Value;
+            if (el != null)
+                MusketAutoReloadConfig.EnableLongPressReload = bool.TryParse(el, out var lr) ? lr : true;
+            else
+                MusketAutoReloadConfig.EnableLongPressReload = ParseBoolAttr(xElement, "EnableAutoReload", true);
+            MusketAutoReloadConfig.EnableModWeaponCompat = ParseBoolAttr(xElement, "EnableModWeaponCompat", true);
+        }
+
+        static bool ParseBoolAttr(XElement el, string name, bool fallback) {
+            var val = el.Attribute(name)?.Value;
+            return val != null ? bool.TryParse(val, out bool b) ? b : fallback : fallback;
         }
     }
 }
