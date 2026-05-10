@@ -2,8 +2,7 @@
 
 ## 项目介绍
 
-## AI创作警告
-
+### AI创作警告
 - 本项目为 AI 创作，包含人工审查及部分修改，介意者勿用。
 - 本项目仅用于学习和研究，不包含任何商业用途。
 - 使用agent工具：Trae CN
@@ -11,7 +10,8 @@
 
 ## 模组功能
 
-本模组MusketAutoReload为基于Survivalcraft API 1.9.0.2 创作的独立武器装填模组，从作者自己的另一个辅助向模组 VanillaEnhancement（原版辅助增强） 模组中独立而来，提供按R键快速装填火枪/弩/弓的功能，含冷却覆盖层显示、游戏内配置界面，支持原版及部分模组武器。
+<<<<<<< HEAD
+本模组MusketAutoReload为基于Survivalcraft API 1.9.0.2 创作的独立武器装填模组，从作者自己的另一个辅助向模组 [VanillaEnhancement（原版辅助增强）](https://github.com/Aseneo/SCmod-VanillaEnhancementMod/tree/main) 模组中独立而来，提供按R键快速装填火枪/弩/弓的功能，含冷却覆盖层显示、游戏内配置界面，支持原版及部分模组武器。
 
 ## 目录结构
 
