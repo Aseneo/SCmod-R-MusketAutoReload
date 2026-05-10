@@ -10,7 +10,6 @@
 
 ## 模组功能
 
-<<<<<<< HEAD
 本模组MusketAutoReload为基于Survivalcraft API 1.9.0.2 创作的独立武器装填模组，从作者自己的另一个辅助向模组 [VanillaEnhancement（原版辅助增强）](https://github.com/Aseneo/SCmod-VanillaEnhancementMod/tree/main) 模组中独立而来，提供按R键快速装填火枪/弩/弓的功能，含冷却覆盖层显示、游戏内配置界面，支持原版及部分模组武器。
 
 ## 目录结构
